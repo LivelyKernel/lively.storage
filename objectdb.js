@@ -862,13 +862,6 @@ class Synchronization {
     let commitNameTypeFilter = _commitdb_indexes.find(ea => ea.name === 'nameTypeFilter'),
         versionNameTypeFilter = _versiondb_indexes.find(ea => ea.name === 'nameTypeFilter');
 
-    if (pushDesignDocToRemote) {
-      console.log("adding commitNameTypeFilter")
-      await remoteCommitDB.addDesignDoc(commitNameTypeFilter);      
-      console.log("adding versionNameTypeFilter")
-      await remoteVersionDB.addDesignDoc(versionNameTypeFilter);
-    }
-
     let opts = {
           live, retry,
           // conflicts: true,
