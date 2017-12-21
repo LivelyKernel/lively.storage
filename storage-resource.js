@@ -163,6 +163,40 @@ export default class LivelyStorageResource extends Resource {
 
 }
 
+export class CouchDBResource extends LivelyStorageResource {
+
+  get db() {
+    const scheme = this.scheme() === 'couchdbs' ? 'https' : 'http';
+    const dbUrl = `${scheme}://${this.host()}/${this.dbName}`;
+    return this._db || (this._db = Database.ensureDB(dbUrl));
+  }
+
+  path() {
+    let fullPath = super.path();
+    let pathStart = fullPath.indexOf('/', 1);
+    let path = pathStart === -1 ? '' : fullPath.substr(pathStart + 1);
+    return path;
+  }
+
+  get dbName() {
+    let fullPath = super.path();
+    let pathStart = fullPath.indexOf('/', 1);
+    let dbName = fullPath.substr(1, pathStart === -1 ? fullPath.length : pathStart - 1);
+    return dbName;
+  }
+
+  async write(content) {
+    if (this.ext() === 'json') {
+      try {
+        content = JSON.parse(content);
+      } catch(e) {
+        // JSON ending but no JSON file... just write a blob
+      }
+    }
+    return super.write(content);
+  }
+
+}
 
 export const resourceExtension = {
   name: "lively.storage",
@@ -170,6 +204,20 @@ export const resourceExtension = {
   resourceClass: LivelyStorageResource
 }
 
+export const couchdbResourceExtension = {
+  name: "couchdb.http",
+  matches: (url) => url.startsWith("couchdb:"),
+  resourceClass: CouchDBResource
+}
+
+export const couchdbsResourceExtension = {
+  name: "couchdb.https",
+  matches: (url) => url.startsWith("couchdbs:"),
+  resourceClass: CouchDBResource
+}
+
 // will install resource extension:
 import { registerExtension } from "lively.resources";
 registerExtension(resourceExtension);
+registerExtension(couchdbResourceExtension);
+registerExtension(couchdbsResourceExtension);
