@@ -980,9 +980,9 @@ class Synchronization {
               return fromResource.copyTo(toResource).catch(err => {
                 if (n >= 5) throw err;
                 return tryCopy(n+1);
-              })
+              });
             }
-          })
+          });
         }), 5);
         console.log(`${this} sending files done`);
       } catch (err) {
@@ -994,7 +994,6 @@ class Synchronization {
         updateState(this);
         tryToResolve(this, error ? [error] : []);
       }
-
     })
     .on('paused', () => {
       commitReplicationState = "paused";
