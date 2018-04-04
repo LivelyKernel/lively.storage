@@ -174,8 +174,14 @@ export class CouchDBResource extends LivelyStorageResource {
   path() {
     let fullPath = super.path();
     let pathStart = fullPath.indexOf('/', 1);
-    let path = pathStart === -1 ? '' : fullPath.substr(pathStart + 1);
+    let path = pathStart === -1 ? '/' : fullPath.substr(pathStart);
     return path;
+  }
+
+  pathWithoutQuery() {
+    // FIXME: only used when determining the object name to read/write
+    //        so we strip the '/' from the beginning
+    return this.path().split('?')[0].slice(1);
   }
 
   get dbName() {
