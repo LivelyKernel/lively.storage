@@ -417,6 +417,11 @@ export default class Database {
     return this.pouchdb.sync(otherDB, opts);
   }
 
+  stub(otherDB, opts) {
+    // don't do any kind of replication
+    return;
+  }
+
   async getConflicts(opts) {
     let {rows} = await this.pouchdb.query(
       'conflict_index/conflict_index',

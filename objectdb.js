@@ -65,14 +65,16 @@ export default class ObjectDB {
     if (!options.snapshotLocation || !options.snapshotLocation.isResource)
       throw new Error(`ObjectDB needs snapshotLocation!`);
     this.snapshotLocation = options.snapshotLocation;
+    this.__commitDBName = options.commitDB || this.name + "-commits";
+    this.__versionDBName = options.versionDB || this.name + "-version-graph";
     this.__commitDB = null;
     this.__versionDB = null;
   }
 
   async destroy() {
-    let commitDB = Database.findDB(this.name + "-commits");
+    let commitDB = Database.findDB(this.__commitDBName);
     if (commitDB) await commitDB.destroy();
-    let versionDB = Database.findDB(this.name + "-version-graph");
+    let versionDB = Database.findDB(this.__versionDBName);
     if (versionDB) await versionDB.destroy();
     objectDBs.delete(this.name);
 
@@ -362,7 +364,7 @@ export default class ObjectDB {
   async _commitDB() {
     if (this.__commitDB) return this.__commitDB;
 
-    let dbName = this.name + "-commits",
+    let dbName = this.__commitDBName,
         db = Database.findDB(dbName);
     if (db) return this.__commitDB = db;
 
@@ -433,7 +435,7 @@ export default class ObjectDB {
 
   async _versionDB() {
     if (this.__versionDB) return this.__versionDB;
-    let dbName = this.name + "-version-graph",
+    let dbName = this.__versionDBName,
         db = Database.findDB(dbName);
     if (db) return this.__versionDB = db;
     db = Database.ensureDB(dbName);
@@ -862,13 +864,6 @@ class Synchronization {
     let commitNameTypeFilter = _commitdb_indexes.find(ea => ea.name === 'nameTypeFilter'),
         versionNameTypeFilter = _versiondb_indexes.find(ea => ea.name === 'nameTypeFilter');
 
-    if (pushDesignDocToRemote) {
-      console.log("adding commitNameTypeFilter")
-      await remoteCommitDB.addDesignDoc(commitNameTypeFilter);      
-      console.log("adding versionNameTypeFilter")
-      await remoteVersionDB.addDesignDoc(versionNameTypeFilter);
-    }
-
     let opts = {
           live, retry,
           // conflicts: true,
@@ -985,9 +980,9 @@ class Synchronization {
               return fromResource.copyTo(toResource).catch(err => {
                 if (n >= 5) throw err;
                 return tryCopy(n+1);
-              })
+              });
             }
-          })
+          });
         }), 5);
         console.log(`${this} sending files done`);
       } catch (err) {
@@ -999,7 +994,6 @@ class Synchronization {
         updateState(this);
         tryToResolve(this, error ? [error] : []);
       }
-
     })
     .on('paused', () => {
       commitReplicationState = "paused";
@@ -1412,7 +1406,7 @@ export var ObjectDBInterface = {
           ref: "string|undefined",
           commit: "string|undefined"
         }, args => args.type && args.name || args.commit
-                      ? null : {error: `Eiter .type + .name or .commit needed!`}),
+                      ? null : {error: `Either .type + .name or .commit needed!`}),
         db = await ObjectDB.find(dbName),
         defaultRef = "HEAD";
 
